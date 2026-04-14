@@ -363,6 +363,75 @@ details[data-testid="stExpander"] summary { font-weight: 700; color: var(--text-
 
 /* ═══════ 데이터 테이블 ═══════ */
 .stDataFrame { border-radius: 12px; overflow: hidden; }
+/* 테이블 헤더 진하게 */
+.stDataFrame [data-testid="glideDataEditor"] th,
+.stDataFrame [role="columnheader"] {
+    font-weight: 800 !important;
+    color: #1a1a2e !important;
+    font-size: 0.88rem !important;
+}
+
+/* 테이블 전체 래퍼 */
+.table-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 22px 26px 18px 26px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 0.5rem;
+}
+.table-header .th-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+}
+.table-header .th-title {
+    font-size: 1.02rem; font-weight: 700; color: var(--text-primary);
+    display: flex; align-items: center; gap: 8px;
+}
+.table-header .th-title .th-icon {
+    width: 30px; height: 30px; border-radius: 8px; background: #eff6ff;
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+}
+.table-header .th-count {
+    font-size: 0.82rem; font-weight: 600; color: var(--accent-1);
+    background: #f0f4ff; padding: 4px 14px; border-radius: 20px;
+    font-family: var(--font-num);
+}
+.table-header .th-sub {
+    font-size: 0.82rem; color: var(--text-muted); margin-left: 38px;
+}
+
+/* 테이블 내부 스타일 강화 */
+[data-testid="stExpander"] .stDataFrame [data-testid="stDataFrameResizable"] {
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    border-radius: 12px !important;
+}
+/* 헤더 행 */
+[data-testid="stExpander"] .stDataFrame th {
+    background: #f0f4ff !important;
+    color: #1a1a2e !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    padding: 12px 16px !important;
+    border-bottom: 2px solid #dbe4f0 !important;
+    font-family: var(--font-sans) !important;
+}
+/* 데이터 행 */
+[data-testid="stExpander"] .stDataFrame td {
+    font-size: 0.88rem !important;
+    padding: 10px 16px !important;
+    color: #334155 !important;
+    font-family: var(--font-num) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.04) !important;
+}
+/* 짝수 행 배경 */
+[data-testid="stExpander"] .stDataFrame tr:nth-child(even) td {
+    background: #fafbfd !important;
+}
+/* 호버 */
+[data-testid="stExpander"] .stDataFrame tr:hover td {
+    background: #f0f4ff !important;
+}
 
 /* ═══════ 구분선 ═══════ */
 hr { border: none; height: 1px; background: linear-gradient(to right, transparent, #e2e8f0, transparent); margin: 1.5rem 0; }
@@ -509,7 +578,7 @@ if not main_df.empty:
     kpis = [
         ("c-red",   "ib-red",   "💰", "총 지출액",      f"₩{s_spent:,.0f}",  badge(delta," 전년비",True)),
         ("c-amber", "ib-amber", "🍔", "케이터링",       f"₩{s_cater:,.0f}",  f"<span class='kpi-badge b-info'>지출의 {c_ratio:.1f}%</span>"),
-        ("c-green", "ib-green", "📈", "후원 입금",       f"₩{s_income:,.0f}", f"<span class='kpi-badge {'b-up' if s_income>=s_spent else 'b-down'}'>{'흑자' if s_income>=s_spent else '적자'} 구간</span>"),
+        ("c-green", "ib-green", "📈", "후원 비용",       f"₩{s_income:,.0f}", f"<span class='kpi-badge {'b-up' if s_income>=s_spent else 'b-down'}'>{'흑자' if s_income>=s_spent else '적자'} 구간</span>"),
         ("c-blue",  "ib-blue",  "👥", "총 참석인원",     f"{s_attend:,.0f}명", f"<span class='kpi-badge b-info'>총 {n_count:,}회</span>"),
         ("c-purple","ib-purple","📊", "참석율 현황",     f"{avg_attend_rate:.1f}%", f"<span class='kpi-badge {'b-up' if avg_attend_rate>=70 else 'b-down'}'>{'양호' if avg_attend_rate>=70 else '개선 필요'}</span>"),
     ]
@@ -538,6 +607,7 @@ if not main_df.empty:
         margin=dict(t=20, b=20, l=20, r=20),
         hoverlabel=dict(bgcolor="white", font_size=14, font_family="Pretendard, Inter, sans-serif",
                         bordercolor="#e2e8f0"),
+        separators='.,',  # ★ 핵심: 소수점=. 천단위=, 강제 (한국어 로케일 '만 원' 방지)
     )
 
     tab1, tab2, tab3 = st.tabs(["📊  월별 분석", "🏢  후원사 분석", "📈  트렌드"])
@@ -553,34 +623,36 @@ if not main_df.empty:
             mp = f_df.resample('ME', on='날짜')['소계_지출'].sum().reset_index()
             mp['l'] = mp['날짜'].dt.strftime('%y년 %m월')
             n = max(len(mp)-1,1)
-            cols = [f'rgba(102,126,234,{.4+.6*i/n})' for i in range(len(mp))]
+            cols = [f'rgba(55,100,200,{.45+.5*i/n})' for i in range(len(mp))]
             f1 = go.Figure(go.Bar(x=mp['l'],y=mp['소계_지출'],
-                marker=dict(color=cols,cornerradius=8,line=dict(color='rgba(102,126,234,.6)',width=.5)),
+                marker=dict(color=cols,cornerradius=8,line=dict(color='rgba(55,100,200,.7)',width=.5)),
                 text=[f"₩{v:,.0f}" for v in mp['소계_지출']], textposition='outside',
                 textfont=dict(size=12,color='#1a1a2e',family='Inter, Pretendard, sans-serif'),
                 hovertemplate="<b>%{x}</b><br>₩%{y:,.0f}<extra></extra>"))
             f1.update_layout(**CT,height=420,showlegend=False,
                 xaxis=dict(tickfont=dict(size=12,color='#475569',family='Pretendard'),showgrid=False),
-                yaxis=dict(tickformat=',.0f',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',
+                yaxis=dict(tickformat=',d',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',
+                           exponentformat='none',
                            tickfont=dict(size=11,color='#64748b',family='Inter')))
             st.plotly_chart(f1, use_container_width=True)
 
         with R:
             st.markdown("""<div class='chart-wrap'>
                 <div class='cw-head'><div class='cw-icon ci-line'>🔀</div><div class='cw-title'>항목별 비교</div></div>
-                <div class='cw-sub'>지출 · 케이터링 · 후원 입금의 월간 흐름을 비교합니다</div>
+                <div class='cw-sub'>지출 · 케이터링 · 후원 비용의 월간 흐름을 비교합니다</div>
             </div>""", unsafe_allow_html=True)
             md = f_df.resample('ME',on='날짜').agg({'소계_지출':'sum','케이터링':'sum','후원입금':'sum'}).reset_index()
             md['l'] = md['날짜'].dt.strftime('%y.%m')
             f2 = go.Figure()
-            for c,nm,co,d in [('소계_지출','총 지출','#ef4444','solid'),('케이터링','케이터링','#f59e0b','dash'),('후원입금','후원 입금','#22c55e','dot')]:
+            for c,nm,co,d in [('소계_지출','총 지출','#4361ee','solid'),('케이터링','케이터링','#e09f3e','dash'),('후원입금','후원 비용','#2ec4b6','dot')]:
                 f2.add_trace(go.Scatter(x=md['l'],y=md[c],name=nm,mode='lines+markers',
                     line=dict(width=2.5,color=co,dash=d),marker=dict(size=7),
                     hovertemplate=f"<b>{nm}</b><br>₩%{{y:,.0f}}<extra></extra>"))
             f2.update_layout(**CT,height=420,
                 legend=dict(orientation='h',y=1.1,xanchor='center',x=.5,font=dict(size=12,family='Pretendard')),
                 xaxis=dict(showgrid=False,tickfont=dict(size=11,color='#475569',family='Pretendard')),
-                yaxis=dict(tickformat=',.0f',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',
+                yaxis=dict(tickformat=',d',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',
+                           exponentformat='none',
                            tickfont=dict(size=11,color='#64748b',family='Inter')))
             st.plotly_chart(f2, use_container_width=True)
 
@@ -600,14 +672,19 @@ if not main_df.empty:
                 od=pd.DataFrame([{'후원사명':'기타','소계_지출':ss.iloc[tn:]['소계_지출'].sum()}])
                 pdf=pd.concat([td,od],ignore_index=True)
             else: pdf=ss
-            pal=['#667eea','#764ba2','#f093fb','#f5576c','#4facfe','#00f2fe','#43e97b','#fa709a','#cbd5e1']
+            pal=['#4361ee','#3a0ca3','#7209b7','#f72585','#4cc9f0','#4895ef','#56cfe1','#80ffdb','#b8c0cc']
             f3=go.Figure(go.Pie(labels=pdf['후원사명'],values=pdf['소계_지출'],hole=.58,
                 marker=dict(colors=pal[:len(pdf)],line=dict(color='white',width=3)),
-                textinfo='percent',textposition='auto',textfont=dict(size=13,color='white',family='Inter, Pretendard'),
+                textinfo='percent',
+                textposition='inside',
+                textfont=dict(size=15,color='white',family='Inter, Pretendard'),
+                insidetextorientation='horizontal',
                 hovertemplate="<b>%{label}</b><br>₩%{value:,.0f}<br>%{percent}<extra></extra>",sort=False))
             f3.add_annotation(text=f"<b style='font-size:17px;color:#1a1a2e;font-family:Inter'>₩{s_spent:,.0f}</b><br><span style='font-size:12px;color:#64748b'>총 지출</span>",showarrow=False)
             f3.update_layout(**CT,height=460,showlegend=True,
-                legend=dict(orientation='h',y=-.08,xanchor='center',x=.5,font=dict(size=11,family='Pretendard'),itemwidth=30))
+                legend=dict(orientation='h',y=-.08,xanchor='center',x=.5,
+                            font=dict(size=13,family='Pretendard',color='#1a1a2e'),
+                            itemwidth=30))
             st.plotly_chart(f3, use_container_width=True)
 
         with R2:
@@ -617,14 +694,16 @@ if not main_df.empty:
             </div>""", unsafe_allow_html=True)
             t10=ss.head(10).sort_values('소계_지출',ascending=True)
             mx=t10['소계_지출'].max()
-            bc=['#f5576c' if v==mx else '#667eea' for v in t10['소계_지출']]
+            bc=['#3a0ca3' if v==mx else '#4895ef' for v in t10['소계_지출']]
             f4=go.Figure(go.Bar(y=t10['후원사명'],x=t10['소계_지출'],orientation='h',
                 marker=dict(color=bc,cornerradius=8),
                 text=[f"₩{v:,.0f}" for v in t10['소계_지출']],textposition='auto',
                 textfont=dict(size=12,color='white',family='Inter, Pretendard'),
                 hovertemplate="<b>%{y}</b><br>₩%{x:,.0f}<extra></extra>"))
             f4.update_layout(**CT,height=460,showlegend=False,
-                xaxis=dict(tickformat=',.0f',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',tickfont=dict(size=11,color='#64748b',family='Inter')),
+                xaxis=dict(tickformat=',d',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',
+                           exponentformat='none',
+                           tickfont=dict(size=11,color='#64748b',family='Inter')),
                 yaxis=dict(tickfont=dict(size=12,color='#1a1a2e',family='Pretendard'),automargin=True))
             st.plotly_chart(f4, use_container_width=True)
 
@@ -640,15 +719,17 @@ if not main_df.empty:
             dy['MA7']=dy['소계_지출'].rolling(7,min_periods=1).mean()
             f5=go.Figure()
             f5.add_trace(go.Scatter(x=dy['날짜'],y=dy['소계_지출'],name='일별',mode='markers',
-                marker=dict(size=5,color='rgba(102,126,234,.45)'),
+                marker=dict(size=5,color='rgba(55,100,200,.5)'),
                 hovertemplate="<b>%{x|%Y.%m.%d}</b><br>₩%{y:,.0f}<extra></extra>"))
             f5.add_trace(go.Scatter(x=dy['날짜'],y=dy['MA7'],name='7일 평균',mode='lines',
-                line=dict(width=3,color='#ef4444'),
+                line=dict(width=3,color='#4361ee'),
                 hovertemplate="<b>7일 평균</b><br>₩%{y:,.0f}<extra></extra>"))
             f5.update_layout(**CT,height=420,
                 legend=dict(orientation='h',y=1.1,xanchor='center',x=.5,font=dict(size=12,family='Pretendard')),
                 xaxis=dict(showgrid=False,tickfont=dict(size=11,color='#475569',family='Pretendard')),
-                yaxis=dict(tickformat=',.0f',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',tickfont=dict(size=11,color='#64748b',family='Inter')))
+                yaxis=dict(tickformat=',d',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',
+                           exponentformat='none',
+                           tickfont=dict(size=11,color='#64748b',family='Inter')))
             st.plotly_chart(f5, use_container_width=True)
 
         with R3:
@@ -660,15 +741,17 @@ if not main_df.empty:
             dc2['c_s']=dc2['소계_지출'].cumsum(); dc2['c_i']=dc2['후원입금'].cumsum()
             f6=go.Figure()
             f6.add_trace(go.Scatter(x=dc2['날짜'],y=dc2['c_s'],name='누적 지출',fill='tozeroy',
-                fillcolor='rgba(239,68,68,.08)',line=dict(width=2.5,color='#ef4444'),
+                fillcolor='rgba(67,97,238,.12)',line=dict(width=2.5,color='#4361ee'),
                 hovertemplate="<b>누적 지출</b><br>₩%{y:,.0f}<extra></extra>"))
             f6.add_trace(go.Scatter(x=dc2['날짜'],y=dc2['c_i'],name='누적 수입',fill='tozeroy',
-                fillcolor='rgba(34,197,94,.08)',line=dict(width=2.5,color='#22c55e'),
+                fillcolor='rgba(46,196,182,.12)',line=dict(width=2.5,color='#2ec4b6'),
                 hovertemplate="<b>누적 수입</b><br>₩%{y:,.0f}<extra></extra>"))
             f6.update_layout(**CT,height=420,
                 legend=dict(orientation='h',y=1.1,xanchor='center',x=.5,font=dict(size=12,family='Pretendard')),
                 xaxis=dict(showgrid=False,tickfont=dict(size=11,color='#475569',family='Pretendard')),
-                yaxis=dict(tickformat=',.0f',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',tickfont=dict(size=11,color='#64748b',family='Inter')))
+                yaxis=dict(tickformat=',d',tickprefix='₩',gridcolor='rgba(0,0,0,.04)',
+                           exponentformat='none',
+                           tickfont=dict(size=11,color='#64748b',family='Inter')))
             st.plotly_chart(f6, use_container_width=True)
 
     # ═══════════════════════════════════════════════════════
@@ -678,22 +761,43 @@ if not main_df.empty:
         <div class='line'></div><div class='label'>원본 데이터</div><div class='line'></div>
     </div>""", unsafe_allow_html=True)
 
-    with st.expander("🔍 데이터 정합성 확인 테이블"):
+    with st.container():
         vd = f_df[['날짜','후원사명','케이터링','후원입금','소계_지출']].copy()
-        vd['날짜'] = vd['날짜'].dt.strftime('%Y-%m-%d')
+        # 날짜에 요일 표기 추가: 2026-01-15(목)
+        day_names = {0:'월',1:'화',2:'수',3:'목',4:'금',5:'토',6:'일'}
+        vd['날짜'] = vd['날짜'].apply(lambda x: f"{x.strftime('%Y-%m-%d')}({day_names[x.weekday()]})")
+
+        # 테이블 헤더 카드
+        st.markdown(f"""
+            <div class='table-header'>
+                <div class='th-top'>
+                    <div class='th-title'>
+                        <div class='th-icon'>📝</div>
+                        원본 데이터 목록
+                    </div>
+                    <div class='th-count'>{len(vd):,}건</div>
+                </div>
+                <div class='th-sub'>필터링된 기간의 전체 지출 내역을 확인하세요</div>
+            </div>
+        """, unsafe_allow_html=True)
+
         st.dataframe(vd,
             column_config={
-                "날짜":     st.column_config.TextColumn("📅 날짜",width="small"),
-                "후원사명": st.column_config.TextColumn("🏢 후원사명",width="medium"),
-                "케이터링": st.column_config.NumberColumn("🍔 케이터링",format="₩%,.0f"),
-                "후원입금": st.column_config.NumberColumn("📈 후원입금",format="₩%,.0f"),
-                "소계_지출": st.column_config.ProgressColumn("💰 소계 지출",format="₩%,.0f",
+                "날짜":     st.column_config.TextColumn("📅 날짜", width="small"),
+                "후원사명": st.column_config.TextColumn("🏢 후원사명", width="medium"),
+                "케이터링": st.column_config.NumberColumn("🍔 케이터링", format="₩%,.0f"),
+                "후원입금": st.column_config.NumberColumn("💰 후원비용", format="₩%,.0f"),
+                "소계_지출": st.column_config.ProgressColumn("💰 소계 지출", format="₩%,.0f",
                     min_value=0, max_value=float(vd['소계_지출'].max()) if not vd.empty else 1),
-            }, use_container_width=True, height=400, hide_index=True)
-        st.download_button("📥 CSV 다운로드",
-            vd.to_csv(index=False).encode('utf-8-sig'),
-            file_name=f"마케터의밤_지출_{sel_year}.csv",
-            mime="text/csv", use_container_width=True)
+            }, use_container_width=True, height=450, hide_index=True)
+
+        # 다운로드 버튼
+        dl1, dl2, dl3 = st.columns([1,1,1])
+        with dl2:
+            st.download_button("📥 CSV 다운로드",
+                vd.to_csv(index=False).encode('utf-8-sig'),
+                file_name=f"마케터의밤_지출_{sel_year}.csv",
+                mime="text/csv", use_container_width=True)
 
 else:
     st.markdown("""<div style='text-align:center;padding:5rem 2rem;color:#94a3b8;'>
